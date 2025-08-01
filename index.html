@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Washington Post Live '25 - Interactive Portfolio Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Washington Post Classic (Black, White, Gray, with Red Accents) -->
+    <!-- Application Structure Plan: A single-page dashboard design was chosen to provide a comprehensive, at-a-glance overview of the portfolio's status. This structure prioritizes immediate access to key metrics and project details. The user flow is designed to be intuitive, starting with high-level KPIs, moving to a visual breakdown of project statuses, and finally allowing for detailed exploration through a filterable project list. The addition of Program Type and Location filters enhances this exploration, allowing for multi-criteria searching. This approach enhances usability by presenting the most critical information upfront while enabling deeper dives as needed. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Key portfolio metrics (Total Projects, On Track, Off Track, On Hold, Complete, No Status). Goal: Inform. Viz/Presentation: KPI cards. Interaction: Static display. Justification: Provides a quick, high-level summary. Library/Method: HTML/Tailwind.
+        - Report Info: Project status distribution. Goal: Compare. Viz/Presentation: Donut Chart. Interaction: Hover for tooltips with exact numbers. Justification: Visually represents the proportion of projects in each status category. Library/Method: Chart.js.
+        - Report Info: Detailed project list. Goal: Organize/Explore. Viz/Presentation: Interactive Table. Interaction: Filter buttons for Status, Program Type, and Location to view projects by status. Justification: Allows users to focus on specific project categories and access detailed information efficiently. Library/Method: JavaScript/HTML/Tailwind.
+        - Report Info: Next steps for projects. Goal: Generate. Viz/Presentation: Dynamic text output. Interaction: Button to trigger LLM call for stalled projects. Justification: Offers actionable suggestions to address projects that are stalled. Library/Method: Gemini API.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        h1, h2, h3, .font-playfair {
+            font-family: 'Playfair Display', serif;
+        }
+        .kpi-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .filter-btn.active {
+            background-color: #2d3748;
+            color: white;
+        }
+        .clear-filters-btn:hover {
+            background-color: #ef4444;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Washington Post Live Events Portfolio</h1>
+            <p class="text-lg text-gray-600 mt-2">An Interactive Overview of 2025 Projects</p>
+        </header>
+
+        <main>
+            <section id="kpis" class="mb-10">
+                <h2 class="text-3xl font-bold text-center mb-6">Key Portfolio Metrics</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="kpi-card bg-white p-6 rounded-lg shadow-md text-center border-l-4 border-red-700">
+                        <h3 class="text-4xl font-bold text-red-700" id="total-projects"></h3>
+                        <p class="text-gray-500 mt-1">Total Projects</p>
+                    </div>
+                    <div class="kpi-card bg-white p-6 rounded-lg shadow-md text-center border-l-4 border-green-500">
+                        <h3 class="text-4xl font-bold text-green-500" id="on-track-projects"></h3>
+                        <p class="text-gray-500 mt-1">On Track</p>
+                    </div>
+                    <div class="kpi-card bg-white p-6 rounded-lg shadow-md text-center border-l-4 border-yellow-500">
+                        <h3 class="text-4xl font-bold text-yellow-500" id="on-hold-projects"></h3>
+                        <p class="text-gray-500 mt-1">On Hold</p>
+                    </div>
+                    <div class="kpi-card bg-white p-6 rounded-lg shadow-md text-center border-l-4 border-gray-500">
+                        <h3 class="text-4xl font-bold text-gray-500" id="no-updates-projects"></h3>
+                        <p class="text-gray-500 mt-1">Projects Needing Attention</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="dashboard" class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-10">
+                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-3xl font-bold mb-4 text-center">Project Status Breakdown</h2>
+                    <div class="chart-container relative h-64 md:h-80 mx-auto" style="max-width: 400px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-3xl font-bold mb-4">Project Details</h2>
+                    <div class="flex flex-wrap justify-center gap-2 mb-4">
+                        <button class="clear-filters-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm transition-colors">Clear All Filters</button>
+                    </div>
+                    <h3 class="text-xl font-bold mt-6 mb-2">Filter by Status</h3>
+                    <div class="mb-4 flex flex-wrap justify-center gap-2" id="status-filters">
+                        <button class="filter-btn active px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="status" data-filter-value="all">All</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="status" data-filter-value="Complete">Complete</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="status" data-filter-value="On track">On Track</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="status" data-filter-value="Off Track">Off Track</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="status" data-filter-value="On Hold">On Hold</button>
+                        <button class="filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="status" data-filter-value="No Status">No Status</button>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold mt-6 mb-2">Filter by Program Type</h3>
+                    <div class="mb-4 flex flex-wrap justify-center gap-2" id="program-type-filters">
+                        <button class="filter-btn active px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="program-type" data-filter-value="all">All</button>
+                    </div>
+
+                    <h3 class="text-xl font-bold mt-6 mb-2">Filter by Location</h3>
+                    <div class="mb-4 flex flex-wrap justify-center gap-2" id="location-filters">
+                        <button class="filter-btn active px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm" data-filter-type="location" data-filter-value="all">All</button>
+                    </div>
+
+                    <div id="project-list" class="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const csvData = `"NAME","TYPE","TEAM","URL","DESCRIPTION","OWNER","STATUS","LATEST STATUS UPDATE TITLE","LATEST STATUS UPDATE","POSTED BY","POSTED ON","OVERDUE TASKS","COMPLETED TASKS","INCOMPLETE TASKS","PROGRESS","START DATE","DUE DATE","CONNECTED GOALS","Priority","Start Time/Date","Program Type","Program Length","Interview Format","Guests","End Time","Moderator","Location","Sponsor","Logistics Lead","Show Connection Time & Date","Program Producer ","Program Manager","Hold, unconfirmed, or confirmed","Dept.","Start Time","RSVPs","In-Person RSVPs","Total Views"
+"0922 WPI Concordia","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840996754","Replace this text with SPLASH text","Kimberly Fonseca","No Status","0","0","104","0%","2025-09-22","2025-10-01",,"2025-09-22","WP Intelligence",,,"Offsite",,"Grace",,"Confirmed","EG",,,
+"1204 GSK Power Session","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Kimberly Fonseca","On track","0","0","104","0%","2025-12-04","2025-12-15",,"2025-12-04","Power Session",,"TBD",,"Kimberly",,"Confirmed","EG",,,
+"0721 - 0831 Live Center Maintenance","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On track","0","0","104","0%","2025-07-21","2025-08-31",,"2025-07-21","Live Center Maintenance",,,"Onsite",,"Grace",,"Confirmed","EG",,,
+"0909 Post Next: AI & Health/ JHU Carey","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Veronica Bautista","On track","0","0","104","0%","2025-09-09","2025-09-09",,"2025-09-09","Post Next",,,"TBD",,"Kimberly",,"Confirmed","EG",,,
+"0910 Go Behind The Story - White House Panel","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","Off Track","0","0","104","0%","2025-09-10","2025-09-10",,"2025-09-10","Go Behind The Story",,,"TBD",,"Kimberly",,"Confirmed","EG",,,
+"0917 Nats Subscriber Event","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On track","0","0","104","0%","2025-09-17","2025-09-17",,"2025-09-17","Nats Subscriber Event",,,"Offsite",,"Kimberly",,"Confirmed","EG",,,
+"0918 NYC Marketing Exec Roundtable Dinner","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On track","0","0","104","0%","2025-09-18","2025-09-18",,"2025-09-18","NYC Marketing Exec Roundtable Dinner",,,"Offsite",,"Kimberly",,"Confirmed","EG",,,
+"0921 Odo Gallery Dinner","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On track","0","0","104","0%","2025-09-21","2025-09-21",,"2025-09-21","Odo Gallery Dinner",,,"Offsite",,"Kimberly",,"Confirmed","EG",,,
+"0923 AI & Energy Lunch","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On track","0","0","104","0%","2025-09-23","2025-09-23",,"2025-09-23","AI & Energy Lunch",,,"Offsite",,"Kimberly",,"Confirmed","EG",,,
+"0730 WP Intelligence Weekly Brief DEMO","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","Complete","0","0","104","0%","2025-07-30","2025-07-30",,"2025-07-30","WP Intelligence Weekly Brief DEMO",,,"TBD",,"Kimberly",,"Confirmed","EG",,,
+"0903-0905 Arc Week Meeting","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On track","0","0","104","0%","2025-09-03","2025-09-05",,"2025-09-03","Arc Week Meeting",,,"TBD",,"Kimberly",,"Confirmed","EG",,,
+"Alteryx Shark Tank","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On Hold","0","0","104","0%","2025-09-03","2025-09-05",,"2025-09-03","Alteryx Shark Tank",,,"TBD",,"Kimberly",,"On Hold","EG",,,
+"Navigating Today's Workplace","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Joshua Gist","On Hold","0","0","104","0%","2025-09-03","2025-09-05",,"2025-09-03","Navigating Today's Workplace",,,"TBD",,"Kimberly",,"On Hold","EG",,,
+"0917 Chasing Cancer/Pfizer","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Will Bancroft","No Status","0","0","104","0%","2025-09-17","2025-09-17",,"2025-09-17","Chasing Cancer",,,"TBD",,"Kimberly",,"No recent updates","EG",,,
+"1008 Chasing Cancer/Pfizer","Project","Washington Post Live","https://app.asana.com/1/10872358663252/project/1210874840537733","Replace this text with SPLASH text","Will Bancroft","No Status","0","0","104","0%","2025-10-08","2025-10-08",,"2025-10-08","Chasing Cancer",,,"TBD",,"Kimberly",,"No recent updates","EG",,,
+`;
+
+            const parseCsv = (csvString) => {
+                const lines = csvString.trim().split('\n');
+                const headers = lines[0].split(',').map(header => header.trim().replace(/\"/g, ''));
+                const data = lines.slice(1).map(line => {
+                    const values = line.split(',');
+                    const obj = {};
+                    headers.forEach((header, index) => {
+                        obj[header] = values[index]?.trim().replace(/\"/g, '');
+                    });
+                    return obj;
+                });
+                return data;
+            };
+
+            const projectData = parseCsv(csvData);
+            
+            const getUniqueValues = (data, key) => {
+                const values = data.map(item => {
+                    const status = item[key];
+                    if (status && status.trim() !== '') {
+                        return status.trim();
+                    }
+                    return 'Unspecified';
+                });
+                return [...new Set(values)];
+            };
+
+            const uniqueProgramTypes = getUniqueValues(projectData, 'Program Type');
+            const uniqueLocations = getUniqueValues(projectData, 'Location');
+            
+            const onTrackCount = projectData.filter(p => p.STATUS === 'On track').length;
+            const offTrackCount = projectData.filter(p => p.STATUS === 'Off Track').length;
+            const onHoldCount = projectData.filter(p => p.STATUS === 'On Hold').length;
+            const noStatusCount = projectData.filter(p => p.STATUS === 'No Status').length;
+            const completeCount = projectData.filter(p => p.STATUS === 'Complete').length;
+
+            document.getElementById('total-projects').textContent = projectData.length;
+            document.getElementById('on-track-projects').textContent = onTrackCount;
+            document.getElementById('on-hold-projects').textContent = onHoldCount + offTrackCount + noStatusCount;
+            document.getElementById('no-updates-projects').textContent = noStatusCount;
+
+            const ctx = document.getElementById('statusChart').getContext('2d');
+            const statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['On Track', 'Off Track', 'On Hold', 'No Status', 'Complete'],
+                    datasets: [{
+                        data: [onTrackCount, offTrackCount, onHoldCount, noStatusCount, completeCount],
+                        backgroundColor: ['#48BB78', '#F56565', '#F6E05E', '#A0AEC0', '#4299E1'],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 4,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#2d3748',
+                            titleFont: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 14
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const projectListContainer = document.getElementById('project-list');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const clearFiltersBtn = document.querySelector('.clear-filters-btn');
+            const programTypeFiltersContainer = document.getElementById('program-type-filters');
+            const locationFiltersContainer = document.getElementById('location-filters');
+
+            const activeFilters = {
+                status: 'all',
+                'program-type': 'all',
+                location: 'all'
+            };
+
+            const getStatusBadge = (status) => {
+                switch (status) {
+                    case 'On track': return 'bg-green-100 text-green-800';
+                    case 'Off Track': return 'bg-red-100 text-red-800';
+                    case 'On Hold': return 'bg-yellow-100 text-yellow-800';
+                    case 'No Status': return 'bg-gray-100 text-gray-800';
+                    case 'Complete': return 'bg-blue-100 text-blue-800';
+                    default: return 'bg-gray-100 text-gray-800';
+                }
+            };
+            
+            const callGeminiApi = async (prompt) => {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                };
+
+                const MAX_RETRIES = 5;
+                let retries = 0;
+                let response;
+
+                while (retries < MAX_RETRIES) {
+                    try {
+                        response = await fetch(apiUrl, requestOptions);
+                        if (response.ok) {
+                            break;
+                        }
+                    } catch (error) {
+                    }
+                    retries++;
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
+                }
+
+                if (!response || !response.ok) {
+                    return 'Error generating response. Please try again later.';
+                }
+
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                return text || 'Could not generate a response.';
+            };
+            
+            const renderProjects = () => {
+                projectListContainer.innerHTML = '';
+                const filteredProjects = projectData.filter(p => {
+                    const statusMatch = activeFilters.status === 'all' || (p.STATUS || 'No Status') === activeFilters.status;
+                    const programTypeMatch = activeFilters['program-type'] === 'all' || (p['Program Type'] || 'Unspecified') === activeFilters['program-type'];
+                    const locationMatch = activeFilters.location === 'all' || (p.Location || 'Unspecified') === activeFilters.location;
+                    return statusMatch && programTypeMatch && locationMatch;
+                });
+
+                if (filteredProjects.length === 0) {
+                    projectListContainer.innerHTML = `<p class="text-center text-gray-500">No projects found for the selected filters.</p>`;
+                    return;
+                }
+
+                filteredProjects.forEach((project, index) => {
+                    const projectElement = document.createElement('div');
+                    projectElement.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow';
+                    
+                    const status = project.STATUS || 'No Status';
+
+                    projectElement.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <div>
+                                <h4 class="font-bold text-md text-gray-800">${project.NAME}</h4>
+                                <p class="text-sm text-gray-500">Date: ${project['Start Date'] || project['Start Time/Date']}</p>
+                            </div>
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full ${getStatusBadge(status)}">${status}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-sm text-gray-600 my-2">
+                            <span>Program Type: ${project['Program Type'] || 'Unspecified'}</span> |
+                            <span>Location: ${project.Location || 'Unspecified'}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 mt-2">Latest Update: ${project['LATEST STATUS UPDATE TITLE'] || 'N/A'}</p>
+                        <div class="flex justify-end gap-2 mt-2">
+                            ${(status === 'On Hold' || status === 'Off Track' || status === 'No Status') 
+                                ? `<button class="generate-next-steps-btn px-3 py-1 bg-gray-800 text-white text-sm rounded-full font-semibold hover:bg-gray-700 transition-colors" data-name="${project.NAME}" data-status="${status}">
+                                    Suggest Next Steps ✨
+                                </button>` 
+                                : ''
+                            }
+                        </div>
+                        <div class="mt-4 p-3 bg-white border border-gray-200 rounded-lg hidden" id="output-${index}"></div>
+                    `;
+                    projectListContainer.appendChild(projectElement);
+                });
+                
+                document.querySelectorAll('.generate-next-steps-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const projectName = event.target.dataset.name;
+                        const projectStatus = event.target.dataset.status;
+                        const outputElement = event.target.closest('div').nextElementSibling;
+                        outputElement.classList.toggle('hidden');
+                        
+                        if (!outputElement.classList.contains('hidden')) {
+                            outputElement.textContent = 'Generating next steps...';
+                            const prompt = `Given a project named "${projectName}" with a status of "${projectStatus}", suggest a list of 3-5 concise, actionable next steps to move the project forward. The response should be a bulleted list.`;
+                            outputElement.innerHTML = (await callGeminiApi(prompt)).replace(/\n/g, '<br>');
+                        }
+                    });
+                });
+            };
+
+            const createFilterButtons = (container, filterType, values) => {
+                values.forEach(value => {
+                    const button = document.createElement('button');
+                    button.className = 'filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm';
+                    button.dataset.filterType = filterType;
+                    button.dataset.filterValue = value;
+                    button.textContent = value;
+                    container.appendChild(button);
+                });
+            };
+
+            createFilterButtons(programTypeFiltersContainer, 'program-type', uniqueProgramTypes);
+            createFilterButtons(locationFiltersContainer, 'location', uniqueLocations);
+
+            document.addEventListener('click', (event) => {
+                const target = event.target;
+                if (target.classList.contains('filter-btn')) {
+                    const filterType = target.dataset.filterType;
+                    const filterValue = target.dataset.filterValue;
+
+                    document.querySelectorAll(`.filter-btn[data-filter-type="${filterType}"]`).forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    target.classList.add('active');
+                    activeFilters[filterType] = filterValue;
+                    renderProjects();
+                } else if (target.classList.contains('clear-filters-btn')) {
+                    Object.keys(activeFilters).forEach(key => {
+                        activeFilters[key] = 'all';
+                        document.querySelectorAll(`.filter-btn[data-filter-type="${key}"]`).forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        document.querySelector(`.filter-btn[data-filter-type="${key}"][data-filter-value="all"]`).classList.add('active');
+                    });
+                    renderProjects();
+                }
+            });
+
+            renderProjects();
+        });
+    </script>
+
+</body>
+</html>
