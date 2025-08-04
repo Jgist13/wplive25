@@ -40,6 +40,12 @@
             background-color: #ef4444;
             color: white;
         }
+        .project-card {
+            cursor: pointer;
+        }
+        .modal {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -111,6 +117,29 @@
         </main>
     </div>
 
+    <!-- Fullscreen Modal -->
+    <div id="project-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <button id="modal-close-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
+            <h2 id="modal-title" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+            <div id="modal-details" class="space-y-4 text-gray-600">
+                <p><span class="font-semibold text-gray-800">Status:</span> <span id="modal-status"></span></p>
+                <p><span class="font-semibold text-gray-800">Due Date:</span> <span id="modal-date"></span></p>
+                <p><span class="font-semibold text-gray-800">Program Type:</span> <span id="modal-program-type"></span></p>
+                <p><span class="font-semibold text-gray-800">Location:</span> <span id="modal-location"></span></p>
+                <p class="font-semibold text-gray-800">Latest Status Update:</p>
+                <div id="modal-latest-update" class="p-4 bg-gray-100 rounded-lg whitespace-pre-wrap"></div>
+                <div id="modal-llm-section" class="hidden">
+                    <button id="modal-next-steps-btn" class="px-4 py-2 bg-gray-800 text-white rounded-full font-semibold text-sm hover:bg-gray-700 transition-colors mt-4">
+                        Suggest Next Steps ✨
+                    </button>
+                    <div id="modal-next-steps-output" class="mt-4 p-3 bg-gray-100 rounded-lg hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const csvData = `"NAME","STATUS","LATEST STATUS UPDATE","DUE DATE","Program Type","Location","Sponsor"
@@ -152,7 +181,7 @@
 "0616 Professional Partners Program Lunch","Complete","Summary The Professional Partners Program Lunch event has been successfully completed as scheduled on June 16, 2025. Key points include:      ✓ Professional Partners Lunch was marked as completed on June 16, 2025 at 4:26 AM     The task that was previously noted as incomplete in the last status update has now been completed     The event was created by Kiah Johnson who uses they/them pronouns     The lunch event was successfully held as planned on June 16, 2025   Next steps With the Professional Partners Lunch event now complete, the project has reached its conclusion. Key points include:      All tasks related to the Professional Partners Program Lunch have been completed     No outstanding items remain for this project     The final task ✓ Professional Partners Lunch was completed on the morning of the event day     Any follow-up activities or post-event evaluations should be initiated as a new project phase if required  ","6/16/2025","Washpost Internal","Penthouse West",
 "0130 Eugene Meyer Awards Dinner","Complete","Summary  Next steps ","1/30/2025","Washpost Internal",
 "0110 First Look","Complete","Summary The First Look event on Jan 10, 2025, has been successfully completed with no technical or non-technical issues reported. Key points include:      ✓ Technical Director and ✓ Skype Manager roles were fulfilled by Gregg Bevan and Carlos Adrian Claros respectively.     ✓ First Look, Jan 10, 2025, No issues was completed, marking a smooth end to the event.     ✓ Confirm Arc and Vitac for streaming and closed captioning was successfully completed.     A connection test was conducted with guest ✓ Cat Zakrzewski, Jan 10, 2025 at 8:40am on Jan 9, 2025, ensuring readiness for the event.   Next steps With the project completed, the focus shifts to wrapping up remaining tasks and documentation. Key points include:      Ensure all event recordings are properly uploaded and stored in the https://drive.google.com/open?id=179G6zJNdA4lc6QcE7HDoAD2w88QFjhia&usp=drive_fs folder.     Complete any outstanding administrative tasks, such as finalizing the https://form.asana.com/?k=jLyl8pL2jJr5iPS2wfS7oQ&d=10872358663252 if not already done.     Conduct a post-event review to gather insights and lessons learned for future events.     Archive project materials and update relevant documentation for future reference.  ","1/10/2025","WPL Virtual","Studio",
-"0128-30 Growth Team Meeting","Complete","Summary The Growth Team Summit project has been successfully completed. Key points include:      The ✓ Growth Team Summit, Jan 30, 2025 event was completed on Jan 30, 2025, as scheduled.     All internal support tasks for the three-day summit were completed on time, including ✓ Internal Support 1 Day 1, ✓ Internal Support 2 Day 1, and ✓ Internal Support 3 Day 1.     The event utilized 12 channels of RF handheld microphones, one per table, with a custom mixer layout developed for this arrangement.     Tyler Chang used the opportunity to re-develop Companion controls for M/E source selection for stream deck, and updates were made to the Internal template.   Next steps With the project completed, there are a few remaining tasks to finalize. Key points include:      ✓ Reset Stage after Internal is due on Jan 31, 2025, to return staging and carpet, reset lighting and cabling, and complete testing.     ✓ Return HH mics to PA Kit is scheduled for Jan 31, 2025, to properly store the equipment used during the summit.     Joshua Gist will keep the 4 spare handheld transmitters in JEFFERSON until the next time the PA is needed, as noted in the event follow-up.     Complete any remaining documentation or feedback collection from the summit to ensure all learnings are captured for future events.  ","1/30/2025","Washpost Internal",,
+"0128-30 Growth Team Meeting","Complete","Summary The Growth Team Summit project has been successfully completed. Key points include:      The ✓ Growth Team Summit, Jan 30, 2025 event was completed on Jan 30, 2025, as scheduled.     All internal support tasks for the three-day summit were completed on time, including ✓ Internal Support 1 Day 1, ✓ Internal Support 2 Day 1, and ✓ Internal Support 3 Day 1.     The event utilized 12 channels of RF handheld microphones, one per table, with a custom mixer layout developed for this arrangement.     Tyler Chang used the opportunity to re-develop Companion controls for M/E source selection for stream deck, and updates were made to the Internal template.   Next steps With the project completed, there are a few remaining tasks to finalize. Key points include:      ✓ Reset Stage after Internal is due on Jan 31, 2025, to return staging and carpet, reset lighting and cabling, and complete testing.     ✓ Return HH mics to PA Kit is scheduled for Jan 31, 2025, to properly store the equipment used during the summit.     Joshua Gist will keep the 4 spare handheld transmitters in JEFFERSON until the next time the PA is needed, as noted in the event follow-up.     Complete any remaining documentation or feedback collection from the summit to ensure all learnings are captured for future events.  ","1/30/2025","Washpost Internal",
 "0120 Inauguration","Complete","Summary  Next steps ","12/9/2024","Sponsor Offsite","Offsite",
 "0213 Post Next Dinner","Complete","Summary The ✓ Post Next Dinner event was completed successfully and under budget, marking a positive outcome for our team Key takeaways:      Event execution was smooth and timely     Financial goals were met, demonstrating effective resource management     Opportunities for enhancement identified with already in house AV equipment     Project status is complete, with valuable insights for future events Initiatives this work supports The successful completion of ✓ Post Next Dinner supports our ongoing initiative to host engaging and cost-effective events. Key points include:      Demonstrating fiscal responsibility by staying under budget     Identifying areas for improvement in event logistics and equipment   Current Blockers With the successful completion of the dinner event, there are no current blockers to report. Key points include:      Event executed without significant issues     Budget goals met, eliminating financial concerns    Release Milestones The primary milestone for this initiative has been successfully achieved. Key points include:      ✓ Post Next Dinner completed on Feb 13, 2025     Task finished on the due date, indicating good time management        Next Steps & Action Items While the dinner event was successful, there are opportunities for improvement in future events. Recommended next steps:      Research and acquire portable touchscreen options for future events     Investigate travel uplighting solutions to enhance out of office events   ","2/13/2025","Washpost Internal","Offsite",
 "0203 Managers RTO","Complete","Summary Next steps","2/3/2025","Washpost Internal",
@@ -192,11 +221,10 @@
 "0730 Newsroom Toast","Complete","Summary The Newsroom Toast event at The Washington Post's Live Center has been successfully completed on July 30, 2025, with all tasks now marked as completed. Key points include: The ✓ Newsroom toast event was successfully completed on July 30, 2025 Joshua Gist completed the ✓ Internal Support 1 task on July 30, 2025 The ✓ Newsroom Toast, Jul 30, 2025 task was completed with a detailed event brief submitted by Joshua Gist Technical support was successfully provided throughout the event, with a minor RF microphone interference issue that was promptly resolved The event featured speeches including Matt Murray's remarks and a champagne toast, as well as participation from other speakers like Dan Balz Initiatives this work supports This project successfully supported an internal Washington Post event at The Live Center, providing a venue for staff celebration and communication from leadership. Key points include: The event facilitated Matt Murray's remarks and champagne toast at 6:00 PM as planned Technical support was provided for the event, including pre-function music and microphone setup The event took place in the Pre-Function Space of The Live Center as scheduled The gathering successfully accommodated internal Washington Post staff The event featured multiple speakers, including Dan Balz following Matt Murray's remarks Current Blockers There are no current blockers as the project has been successfully completed with all tasks marked as done. Key points include: The previously unassigned ✓ Newsroom toast task was completed on July 30, 2025 Joshua Gist took ownership of and completed the ✓ Internal Support 1 task A minor technical issue with RF microphone interference was promptly resolved during the event All Control Room support tasks have been completed No outstanding tasks remain for this project Release Milestones All project milestones have been successfully achieved with the completion of the Newsroom Toast event on July 30, 2025. Key points include: The Newsroom Toast event was successfully held on July 30, 2025, from 5:30-7:30 PM in the Pre-Function Space ✓ Internal Support 1 was completed by its due date of July 30, 2025, at 8:00 PM Technical support was provided throughout the event, with quick resolution of a microphone interference issue The event included speeches from Matt Murray and Dan Balz as planned Joshua Gist completed the event brief documentation on July 31, 2025 Next Steps & Action Items With the project successfully completed, there are only follow-up recommendations for future events based on lessons learned. Key points include: Update Standard Operating Procedure (SOP) for pre-function RF usage as recommended in the event brief Ensure highest RF output power setting or adjust PA kit for speech spaces in future events Recognize limitations of empty-room testing for audio equipment The event recordings have been uploaded to Google Drive as noted in the ✓ Internal Support 1 task No further action items are required for this completed project","7/30/2025","Washpost Internal","Pre-Function",
 "0918 NYC Marketing Exec Roundtable Dinner","On track","Summary  Next steps ","9/18/2025","CS Client Event","Offsite",
 "WPL Marketing Deadlines","On track",,"8/4/2025","Washpost Internal",
-"Connection Testing","On track","Summary","","Washpost Internal",""
+"Connection Testing","On track","Summary","","Washpost Internal",
 "Events Calendar","On track",,"8/4/2025","Washpost Internal",
 "0917 Nats Subscriber Event","On track","Summary  Next steps ","9/17/2025","CS Client Event","Offsite",
 `;
-
             const parseCsv = (csvString) => {
                 const lines = csvString.trim().split('\n');
                 const headers = lines[0].split(',').map(header => header.trim().replace(/\"/g, ''));
@@ -223,7 +251,6 @@
                 });
                 return [...new Set(values)];
             };
-
             const uniqueProgramTypes = getUniqueValues(projectData, 'Program Type');
             const uniqueLocations = getUniqueValues(projectData, 'Location');
             
@@ -299,6 +326,8 @@
             const clearFiltersBtn = document.querySelector('.clear-filters-btn');
             const programTypeFiltersContainer = document.getElementById('program-type-filters');
             const locationFiltersContainer = document.getElementById('location-filters');
+            const modal = document.getElementById('project-modal');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
 
             const activeFilters = {
                 status: 'all',
@@ -309,7 +338,6 @@
             const getStatusBadge = (status) => {
                 switch (status) {
                     case 'On track': return 'bg-green-100 text-green-800';
-                    case 'Off Track': return 'bg-red-100 text-red-800';
                     case 'On Hold': return 'bg-yellow-100 text-yellow-800';
                     case 'No Status': return 'bg-gray-100 text-gray-800';
                     case 'Complete': return 'bg-blue-100 text-blue-800';
@@ -317,6 +345,46 @@
                 }
             };
             
+            const summarizeStatusUpdate = async (updateText) => {
+                if (!updateText || updateText.trim() === 'N/A') {
+                    return updateText;
+                }
+                const prompt = `Summarize the following project status update into a few concise sentences:\n\n${updateText}`;
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                };
+
+                const MAX_RETRIES = 5;
+                let retries = 0;
+                let response;
+
+                while (retries < MAX_RETRIES) {
+                    try {
+                        response = await fetch(apiUrl, requestOptions);
+                        if (response.ok) {
+                            break;
+                        }
+                    } catch (error) {
+                    }
+                    retries++;
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
+                }
+
+                if (!response || !response.ok) {
+                    return updateText;
+                }
+                const result = await response.json();
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                return text || updateText;
+            };
+
             const callGeminiApi = async (prompt) => {
                 let chatHistory = [];
                 chatHistory.push({ role: "user", parts: [{ text: prompt }] });
@@ -355,7 +423,7 @@
                 return text || 'Could not generate a response.';
             };
             
-            const renderProjects = () => {
+            const renderProjects = async () => {
                 projectListContainer.innerHTML = '';
                 const filteredProjects = projectData.filter(p => {
                     const statusMatch = activeFilters.status === 'all' || (p.STATUS || 'No Status') === activeFilters.status;
@@ -369,12 +437,15 @@
                     return;
                 }
 
-                filteredProjects.forEach((project, index) => {
+                for (const project of filteredProjects) {
                     const projectElement = document.createElement('div');
-                    projectElement.className = 'p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow';
+                    projectElement.className = 'project-card p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer';
+                    projectElement.dataset.index = projectData.indexOf(project);
                     
                     const status = project.STATUS || 'No Status';
                     const isStalled = status === 'On Hold' || status === 'No Status';
+
+                    const summarizedUpdate = await summarizeStatusUpdate(project['LATEST STATUS UPDATE']);
 
                     projectElement.innerHTML = `
                         <div class="flex justify-between items-center mb-2">
@@ -388,37 +459,41 @@
                             <span>Program Type: ${project['Program Type'] || 'Unspecified'}</span> |
                             <span>Location: ${project.Location || 'Unspecified'}</span>
                         </div>
-                        <p class="text-sm text-gray-700 mt-2">${project['LATEST STATUS UPDATE'] || 'N/A'}</p>
-                        <div class="flex justify-end gap-2 mt-2">
-                            ${isStalled
-                                ? `<button class="generate-next-steps-btn px-3 py-1 bg-gray-800 text-white text-sm rounded-full font-semibold hover:bg-gray-700 transition-colors" data-name="${project.NAME}" data-status="${status}">
-                                    Suggest Next Steps ✨
-                                </button>` 
-                                : ''
-                            }
-                        </div>
-                        <div class="mt-4 p-3 bg-white border border-gray-200 rounded-lg hidden" id="output-${index}"></div>
+                        <p class="text-sm text-gray-700 mt-2">${summarizedUpdate || 'N/A'}</p>
                     `;
                     projectListContainer.appendChild(projectElement);
-                });
-                
-                document.querySelectorAll('.generate-next-steps-btn').forEach(button => {
-                    button.addEventListener('click', async (event) => {
-                        const projectName = event.target.dataset.name;
-                        const projectStatus = event.target.dataset.status;
-                        const outputElement = event.target.closest('div').nextElementSibling;
-                        outputElement.classList.toggle('hidden');
+                }
+
+                document.querySelectorAll('.project-card').forEach(card => {
+                    card.addEventListener('click', (event) => {
+                        const index = event.currentTarget.dataset.index;
+                        const project = projectData[index];
                         
-                        if (!outputElement.classList.contains('hidden')) {
-                            outputElement.textContent = 'Generating next steps...';
-                            const prompt = `Given a project named "${projectName}" with a status of "${projectStatus}", suggest a list of 3-5 concise, actionable next steps to move the project forward. The response should be a bulleted list.`;
-                            outputElement.innerHTML = (await callGeminiApi(prompt)).replace(/\n/g, '<br>');
+                        document.getElementById('modal-title').textContent = project.NAME;
+                        document.getElementById('modal-status').textContent = project.STATUS || 'No Status';
+                        document.getElementById('modal-date').textContent = project['DUE DATE'] || 'N/A';
+                        document.getElementById('modal-program-type').textContent = project['Program Type'] || 'Unspecified';
+                        document.getElementById('modal-location').textContent = project.Location || 'Unspecified';
+                        document.getElementById('modal-latest-update').innerHTML = (project['LATEST STATUS UPDATE'] || 'N/A').replace(/\n/g, '<br>');
+
+                        const isStalled = project.STATUS === 'On Hold' || project.STATUS === 'No Status';
+                        const llmSection = document.getElementById('modal-llm-section');
+                        if (isStalled) {
+                            llmSection.classList.remove('hidden');
+                            document.getElementById('modal-next-steps-btn').dataset.name = project.NAME;
+                            document.getElementById('modal-next-steps-btn').dataset.status = project.STATUS;
+                        } else {
+                            llmSection.classList.add('hidden');
                         }
+                        
+                        document.getElementById('modal-next-steps-output').innerHTML = '';
+                        modal.classList.remove('hidden');
                     });
                 });
             };
 
             const createFilterButtons = (container, filterType, values) => {
+                container.innerHTML = `<button class="filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm active" data-filter-type="${filterType}" data-filter-value="all">All</button>`;
                 values.forEach(value => {
                     const button = document.createElement('button');
                     button.className = 'filter-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-full font-semibold text-sm';
@@ -437,7 +512,6 @@
                 if (target.classList.contains('filter-btn')) {
                     const filterType = target.dataset.filterType;
                     const filterValue = target.dataset.filterValue;
-
                     document.querySelectorAll(`.filter-btn[data-filter-type="${filterType}"]`).forEach(btn => {
                         btn.classList.remove('active');
                     });
@@ -453,6 +527,28 @@
                         document.querySelector(`.filter-btn[data-filter-type="${key}"][data-filter-value="all"]`).classList.add('active');
                     });
                     renderProjects();
+                }
+            });
+
+            modalCloseBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('modal-next-steps-btn').addEventListener('click', async (event) => {
+                const projectName = event.target.dataset.name;
+                const projectStatus = event.target.dataset.status;
+                const outputElement = document.getElementById('modal-next-steps-output');
+                outputElement.classList.toggle('hidden');
+                
+                if (!outputElement.classList.contains('hidden')) {
+                    outputElement.textContent = 'Generating next steps...';
+                    const prompt = `Given a project named "${projectName}" with a status of "${projectStatus}", suggest a list of 3-5 concise, actionable next steps to move the project forward. The response should be a bulleted list.`;
+                    outputElement.innerHTML = (await callGeminiApi(prompt)).replace(/\n/g, '<br>');
                 }
             });
 
